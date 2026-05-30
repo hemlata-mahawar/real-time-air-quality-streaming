@@ -1,0 +1,52 @@
+        ┌──────────────────────────────┐
+        │   Air Quality CSV (GCS)      │
+        │   (Raw, Unsorted, Dirty)    │
+        └─────────────┬────────────────┘
+                      ↓
+        ┌──────────────────────────────┐
+        │ Dataproc Batch Job           │
+        │ (PySpark Cleaning Layer)     │
+        │ - Fix missing hours          │
+        │ - Remove bad rows            │
+        │ - Sort by city & time        │
+        └─────────────┬────────────────┘
+                      ↓
+        ┌──────────────────────────────┐
+        │ Kafka Producer (PySpark)     │
+        │ (Simulate Streaming)         │
+        │ Send records → Kafka Topic   │
+        └─────────────┬────────────────┘
+                      ↓
+────────────────────────────────────────────
+
+        ┌──────────────────────────────┐
+        │ Kafka Broker (Compute VM)    │
+        │ Topic: air-quality-stream    │
+        └─────────────┬────────────────┘
+                      ↓
+        ┌──────────────────────────────┐
+        │ Dataproc Streaming Job       │
+        │ (Structured Streaming)       │
+        │ Read data from Kafka         │
+        └─────────────┬────────────────┘
+                      ↓
+        ┌──────────────────────────────┐
+        │ 8-hour Sliding Window        │
+        │ (Slide every 1 hour)         │
+        └─────────────┬────────────────┘
+                      ↓
+        ┌──────────────────────────────┐
+        │ Compute Metrics              │
+        │ V1: Avg AQI                 │
+        │ V2: Max Pollutant Spike     │
+        └─────────────┬────────────────┘
+                      ↓
+        ┌──────────────────────────────┐
+        │ Ranking Logic                │
+        │ Sort by V1, then V2          │
+        └─────────────┬────────────────┘
+                      ↓
+        ┌──────────────────────────────┐
+        │ Output (Console / Sink)      │
+        │ Hourly City Rankings         │
+        └──────────────────────────────┘
